@@ -1,4 +1,4 @@
-baseURL = "http://www.marcelwagenlaender.net"
+baseURL = "https://www.marcelwagenlaender.net"
 languageCode = "en-gb"
 title = "Marcel Wagenländer"
 theme = "introduction"
@@ -23,7 +23,7 @@ theme = "introduction"
         numberOfProjectsToShow   = 3                       # Maximum number of projects to show on home page. Unset or comment out to show all projects
         localTime                = false                   # Show your current local time in contact section
         timeZone                 = "Europe/London"         # Your timezone as in the TZ* column of this list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-        timeFormat               = "en-US"                 # Language specific format to use
+        timeFormat               = "en-GB"                 # Language specific format to use
     [params.projects]
         useTwoColumns            = false                   # Use a layout with two columns instead of three
 
@@ -42,6 +42,14 @@ theme = "introduction"
         url   = "https://scholar.google.com/citations?user=HrCWNs0AAAAJ"
         icon  = "graduation-cap" # icon name without the 'fa-'
         icon_pack = "fas"
+    [[params.social]]
+        url = "https://github.com/marwage"
+        icon = "github"
+        icon_pack = "fab"
+    [[params.social]]
+        url = "https://www.instagram.com/marcelsperspective/"
+        icon = "instagram"
+        icon_pack = "fab"
     # [[params.social]]
         # url = "mailto:youremail@email.com"  # For a direct email link, use "mailto:test@example.org".
         # icon = "paper-plane" # icon name without the 'fa-'

@@ -1,6 +1,6 @@
 ---
 title: "Publications"
-weight: 9
+weight: 2
 ---
 
 ## KungFu: Making Training in Distributed Machine Learning Adaptive

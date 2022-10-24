@@ -1,7 +1,7 @@
 ---
 title: "About"
 image: "portrait.jpg"
-weight: 10
+weight: 1
 ---
 
 Since June 2021, I am a PhD student in the [LSDS](https://lsds.doc.ic.ac.uk) group at Imperial College London.
