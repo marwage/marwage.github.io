@@ -3,4 +3,4 @@ title: "Research statement"
 weight: 4
 ---
 
-[click](https://marcelwagenlander.com/files/research_statement.pdf)
+[click](https://marcelwagenlander.com/assets/research_statement.pdf)
