@@ -3,4 +3,4 @@ title: "Research statement"
 weight: 4
 ---
 
-[click](https://marcelwagenlander.com/assets/research_statement.pdf)
+[click](https://drive.google.com/file/d/1wYRamrmeua6m1cgqMYMbyrOCD9FnHSfF/view?usp=sharing)
