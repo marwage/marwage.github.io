@@ -1,6 +1,6 @@
 ---
 title: "Publications"
-weight: 2
+weight: 3
 ---
 
 ## [KungFu: Making Training in Distributed Machine Learning Adaptive](https://www.usenix.org/system/files/osdi20-mai.pdf)
