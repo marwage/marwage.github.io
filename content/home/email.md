@@ -1,6 +1,6 @@
 ---
 title: "Email"
-weight: 6
+weight: 7
 ---
 
 hello ɑ marcel.systems
