@@ -1,5 +1,5 @@
 ---
-title: "Publications"
+title: "Workshop Publications"
 weight: 4
 ---
 
