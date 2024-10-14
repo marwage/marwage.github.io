@@ -35,7 +35,7 @@ theme = "introduction"
         icon  = "mastodon"
         icon_pack = "fab"
     [[params.social]]
-        url   = "https://www.linkedin.com/in/marcel-wagenländer-85844715b"
+        url   = "https://www.linkedin.com/in/marcel-wagenlaender"
         icon  = "linkedin-in"
         icon_pack = "fab"
     [[params.social]]
