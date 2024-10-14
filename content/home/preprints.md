@@ -1,6 +1,6 @@
 ---
 title: "Pre-prints"
-weight: 2
+weight: 3
 ---
 
 ## [Recommendations for Baselines and Benchmarking Approximate Gaussian Processes](https://arxiv.org/abs/2402.09849)
