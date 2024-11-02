@@ -1,6 +1,6 @@
 ---
 title: "Publications"
-weight: 2
+weight: 20
 ---
 
 ## [Tenplex: Changing Resources of Deep Learning Jobs using Parallelizable Tensor Collections](https://arxiv.org/abs/2312.05181)

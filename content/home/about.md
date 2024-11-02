@@ -1,7 +1,7 @@
 ---
 title: "About"
 image: "portrait.jpg"
-weight: 1
+weight: 10
 ---
 
 Since June 2021, I have been a PhD student in the [Large-Scale Data & Systems Group](https://lsds.doc.ic.ac.uk) (LSDS) group at [Imperial College London](https://www.imperial.ac.uk/computing/), where I conduct research in Machine Learning Systems (MLSys). Under the supervision of Professor [Peter Pietzuch](https://www.doc.ic.ac.uk/~prp/), my primary focus is on large-scale distributed machine learning, particularly exploring the impact of resource changes on deep learning training systems.
