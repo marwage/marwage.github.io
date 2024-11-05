@@ -52,8 +52,8 @@ theme = "introduction"
         icon_pack = "fab"
     [[params.social]]
         url = "https://www.threads.net/@marcelsperspective"
-        icon = "t"
-        icon_pack = "fas"
+        icon = "threads"
+        icon_pack = "fab"
     [[params.social]]
         url = "mailto:helloαmarcel.systems"
         icon = "paper-plane"
