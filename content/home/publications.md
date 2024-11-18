@@ -4,11 +4,11 @@ weight: 20
 ---
 
 # Conferences
-## [Tenplex: Changing Resources of Deep Learning Jobs using Parallelizable Tensor Collections](https://arxiv.org/abs/2312.05181)
+## [Tenplex: Changing Resources of Deep Learning Jobs using Parallelizable Tensor Collections](https://dl.acm.org/doi/10.1145/3694715.3695975)
 **Marcel Wagenländer**, Guo Li, Bo Zhao, Luo Mai, and Peter Pietzuch\
 Symposium on Operating Systems Principles (SOSP), 2024
 
-## [KungFu: Making Training in Distributed Machine Learning Adaptive](https://www.usenix.org/system/files/osdi20-mai.pdf)
+## [KungFu: Making Training in Distributed Machine Learning Adaptive](https://www.usenix.org/conference/osdi20/presentation/mai)
 Luo Mai, Guo Li, **Marcel Wagenländer**, Konstantinos Fertakis, Andrei-Octavian Brabete, and Peter Pietzuch\
 USENIX Symposium on Operating Systems Design and Implementation (OSDI), 2020
 
