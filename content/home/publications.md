@@ -18,6 +18,6 @@ Sebastian W. Ober\*, Artem Artemev\*, **Marcel Wagenländer**\*, Rudolfs Grobins
 arXiv
 
 # Workshops
-## [Spotnik: Designing Distributed Machine Learning for Transient Cloud Resources](https://www.usenix.org/system/files/hotcloud20_paper_wagenlander.pdf)
+## [Spotnik: Designing Distributed Machine Learning for Transient Cloud Resources](https://www.usenix.org/conference/hotcloud20/presentation/wagenl%C3%A4nder)
 **Marcel Wagenländer**, Luo Mai, Guo Li, and Peter Pietzuch\
 USENIX Workshop on Hot Topics in Cloud Computing (HotCloud), 2020
