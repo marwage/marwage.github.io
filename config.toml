@@ -55,6 +55,10 @@ theme = "introduction"
         icon = "t"
         icon_pack = "fas"
     [[params.social]]
+        url = "https://bsky.app/profile/marcelwagenlander.bsky.social"
+        icon = "bluesky"
+        icon_pack = "fab"
+    [[params.social]]
         url = "mailto:helloαmarcel.systems"
         icon = "paper-plane"
         icon_pack = "fas"
