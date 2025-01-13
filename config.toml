@@ -51,10 +51,6 @@ theme = "introduction"
         icon = "instagram"
         icon_pack = "fab"
     [[params.social]]
-        url = "https://www.threads.net/@marcelsperspective"
-        icon = "t"
-        icon_pack = "fas"
-    [[params.social]]
         url = "https://bsky.app/profile/marcelwagenlander.bsky.social"
         icon = "b"
         icon_pack = "fas"
