@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car TCO Comparison</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
+        h1 { text-align: center; margin-bottom: 1.5rem; }
+        .inputs { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+        .panel {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-width: 260px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        .panel h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+        .panel.electric h2 { color: #2563eb; }
+        .panel.gasoline h2 { color: #dc2626; }
+        label { display: block; margin-bottom: .25rem; font-size: .9rem; }
+        input {
+            width: 100%;
+            padding: .4rem .6rem;
+            margin-bottom: .75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .chart-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem 0.5rem 0.5rem 0.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        canvas { display: block; width: 100%; }
+        .legend { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 0.5rem; font-size: .9rem; }
+        .legend span { display: flex; align-items: center; gap: .4rem; }
+        .legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .inputs { gap: 1rem; }
+            .panel { min-width: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Total Cost of Ownership: Electric vs Gasoline</h1>
+
+    <div class="inputs">
+        <div class="panel electric">
+            <h2>Electric Car</h2>
+            <label for="ev-price">Car price (€)</label>
+            <input id="ev-price" type="number" value="74700" step="500">
+            <label for="ev-energy-price">€ / kWh</label>
+            <input id="ev-energy-price" type="number" value="0.38" step="0.01">
+            <label for="ev-consumption">kWh / 100 km</label>
+            <input id="ev-consumption" type="number" value="17.9" step="0.5">
+        </div>
+        <div class="panel gasoline">
+            <h2>Gasoline Car</h2>
+            <label for="gas-price">Car price (€)</label>
+            <input id="gas-price" type="number" value="66900" step="500">
+            <label for="gas-energy-price">€ / l</label>
+            <input id="gas-energy-price" type="number" value="2.12" step="0.01">
+            <label for="gas-consumption">l / 100 km</label>
+            <input id="gas-consumption" type="number" value="7.6" step="0.5">
+        </div>
+    </div>
+
+    <div class="chart-wrapper">
+        <div class="legend">
+            <span><span class="swatch" style="background:#2563eb"></span> Electric</span>
+            <span><span class="swatch" style="background:#dc2626"></span> Gasoline</span>
+        </div>
+        <canvas id="chart"></canvas>
+    </div>
+    <p id="breakeven" style="text-align:center; margin-top:1rem; font-size:1rem; color:#555;"></p>
+
+    <script>
+        var MAX_KM = 250000;
+        var PADDING = { top: 10, right: 20, bottom: 50, left: 70 };
+        var canvas = document.getElementById('chart');
+        var ctx = canvas.getContext('2d');
+
+        var inputs = {
+            evPrice: document.getElementById('ev-price'),
+            evEnergyPrice: document.getElementById('ev-energy-price'),
+            evConsumption: document.getElementById('ev-consumption'),
+            gasPrice: document.getElementById('gas-price'),
+            gasEnergyPrice: document.getElementById('gas-energy-price'),
+            gasConsumption: document.getElementById('gas-consumption'),
+        };
+
+        function tco(carPrice, consumptionPer100, energyPrice, km) {
+            return carPrice + (consumptionPer100 / 100) * energyPrice * km;
+        }
+
+        function val(el) { return parseFloat(el.value) || 0; }
+
+        function formatEur(v) {
+            if (v >= 1000) return '€' + Math.round(v / 1000) + 'k';
+            return '€' + Math.round(v);
+        }
+
+        function formatKm(v) {
+            if (v >= 1000) return (v / 1000) + 'k';
+            return '' + v;
+        }
+
+        function niceScale(maxVal) {
+            var rough = maxVal / 5;
+            var mag = Math.pow(10, Math.floor(Math.log10(rough)));
+            var norm = rough / mag;
+            var step;
+            if (norm <= 1) step = mag;
+            else if (norm <= 2) step = 2 * mag;
+            else if (norm <= 2.5) step = 2.5 * mag;
+            else if (norm <= 5) step = 5 * mag;
+            else step = 10 * mag;
+            var niceMax = Math.ceil(maxVal / step) * step;
+            var ticks = Math.round(niceMax / step);
+            return { max: niceMax, step: step, ticks: ticks };
+        }
+
+        function drawChart() {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            var w = rect.width;
+            var h = rect.height;
+            var plotW = w - PADDING.left - PADDING.right;
+            var plotH = h - PADDING.top - PADDING.bottom;
+
+            var evPrice = val(inputs.evPrice);
+            var evEnergyPrice = val(inputs.evEnergyPrice);
+            var evConsumption = val(inputs.evConsumption);
+            var gasPrice = val(inputs.gasPrice);
+            var gasEnergyPrice = val(inputs.gasEnergyPrice);
+            var gasConsumption = val(inputs.gasConsumption);
+
+            var evMax = tco(evPrice, evConsumption, evEnergyPrice, MAX_KM);
+            var gasMax = tco(gasPrice, gasConsumption, gasEnergyPrice, MAX_KM);
+            var scale = niceScale(Math.max(evMax, gasMax) * 1.05);
+            var yMax = scale.max;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Grid and axes
+            ctx.strokeStyle = '#e5e5e5';
+            ctx.lineWidth = 1;
+            ctx.font = '11px system-ui, sans-serif';
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            var yTicks = scale.ticks;
+            for (var i = 0; i <= yTicks; i++) {
+                var yVal = scale.step * i;
+                var y = PADDING.top + plotH - (yVal / yMax) * plotH;
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, y);
+                ctx.lineTo(PADDING.left + plotW, y);
+                ctx.stroke();
+                ctx.fillText(formatEur(yVal), PADDING.left - 6, y);
+            }
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            var xStep = 50000;
+            for (var km = 0; km <= MAX_KM; km += xStep) {
+                var x = PADDING.left + (km / MAX_KM) * plotW;
+                ctx.beginPath();
+                ctx.moveTo(x, PADDING.top);
+                ctx.lineTo(x, PADDING.top + plotH);
+                ctx.stroke();
+                ctx.fillText(formatKm(km), x, PADDING.top + plotH + 6);
+            }
+
+            // Axis labels
+            ctx.fillStyle = '#555';
+            ctx.font = '12px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Mileage (km)', PADDING.left + plotW / 2, h - 2);
+
+            ctx.save();
+            ctx.translate(12, PADDING.top + plotH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textBaseline = 'top';
+            ctx.fillText('Total Cost (€)', 0, 0);
+            ctx.restore();
+
+            // Draw lines
+            function drawLine(color, priceFn) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                var steps = 100;
+                for (var i = 0; i <= steps; i++) {
+                    var km = (MAX_KM / steps) * i;
+                    var cost = priceFn(km);
+                    var x = PADDING.left + (km / MAX_KM) * plotW;
+                    var y = PADDING.top + plotH - (cost / yMax) * plotH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            drawLine('#2563eb', function(km) { return tco(evPrice, evConsumption, evEnergyPrice, km); });
+            drawLine('#dc2626', function(km) { return tco(gasPrice, gasConsumption, gasEnergyPrice, km); });
+
+            // Axis border
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(PADDING.left, PADDING.top);
+            ctx.lineTo(PADDING.left, PADDING.top + plotH);
+            ctx.lineTo(PADDING.left + plotW, PADDING.top + plotH);
+            ctx.stroke();
+        }
+
+        function setCanvasHeight() {
+            var rect = canvas.parentElement.getBoundingClientRect();
+            var isMobile = window.innerWidth <= 600;
+            canvas.style.height = (isMobile ? 250 : 350) + 'px';
+        }
+
+        var breakevenEl = document.getElementById('breakeven');
+
+        function updateBreakeven() {
+            var evPrice = val(inputs.evPrice);
+            var evCostPerKm = val(inputs.evConsumption) / 100 * val(inputs.evEnergyPrice);
+            var gasCostPerKm = val(inputs.gasConsumption) / 100 * val(inputs.gasEnergyPrice);
+            var gasPrice = val(inputs.gasPrice);
+            var diff = gasCostPerKm - evCostPerKm;
+            if (diff <= 0) {
+                breakevenEl.textContent = evPrice <= gasPrice
+                    ? 'The electric car is always cheaper.'
+                    : 'The gasoline car is always cheaper.';
+                return;
+            }
+            var km = (evPrice - gasPrice) / diff;
+            if (km <= 0) {
+                breakevenEl.textContent = 'The electric car is always cheaper.';
+            } else if (km > MAX_KM) {
+                breakevenEl.textContent = 'No break-even within 250,000 km.';
+            } else {
+                breakevenEl.textContent = 'Break-even at ' + Math.round(km).toLocaleString() + ' km.';
+            }
+        }
+
+        function redraw() { setCanvasHeight(); drawChart(); updateBreakeven(); }
+
+        setCanvasHeight();
+        drawChart();
+        updateBreakeven();
+
+        var keys = Object.keys(inputs);
+        for (var i = 0; i < keys.length; i++) {
+            inputs[keys[i]].addEventListener('input', redraw);
+        }
+        window.addEventListener('resize', redraw);
+    </script>
+</body>
+</html>
