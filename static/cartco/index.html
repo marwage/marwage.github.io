@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car TCO Comparison</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
@@ -29,22 +30,21 @@
             font-size: 1rem;
         }
         .chart-wrapper {
+            position: relative;
             max-width: 900px;
+            height: 400px;
             margin: 0 auto;
             background: #fff;
             border-radius: 8px;
-            padding: 1rem 0.5rem 0.5rem 0.5rem;
+            padding: 1.5rem;
             box-shadow: 0 1px 4px rgba(0,0,0,.1);
         }
-        canvas { display: block; width: 100%; }
-        .legend { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 0.5rem; font-size: .9rem; }
-        .legend span { display: flex; align-items: center; gap: .4rem; }
-        .legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
         @media (max-width: 600px) {
             body { padding: 1rem; }
             h1 { font-size: 1.2rem; }
             .inputs { gap: 1rem; }
             .panel { min-width: 0; width: 100%; }
+            .chart-wrapper { height: 300px; }
         }
     </style>
 </head>
@@ -73,19 +73,12 @@
     </div>
 
     <div class="chart-wrapper">
-        <div class="legend">
-            <span><span class="swatch" style="background:#2563eb"></span> Electric</span>
-            <span><span class="swatch" style="background:#dc2626"></span> Gasoline</span>
-        </div>
         <canvas id="chart"></canvas>
     </div>
     <p id="breakeven" style="text-align:center; margin-top:1rem; font-size:1rem; color:#555;"></p>
 
     <script>
         var MAX_KM = 250000;
-        var PADDING = { top: 10, right: 20, bottom: 50, left: 70 };
-        var canvas = document.getElementById('chart');
-        var ctx = canvas.getContext('2d');
 
         var inputs = {
             evPrice: document.getElementById('ev-price'),
@@ -96,144 +89,84 @@
             gasConsumption: document.getElementById('gas-consumption'),
         };
 
+        function val(el) { return parseFloat(el.value) || 0; }
+
         function tco(carPrice, consumptionPer100, energyPrice, km) {
             return carPrice + (consumptionPer100 / 100) * energyPrice * km;
         }
 
-        function val(el) { return parseFloat(el.value) || 0; }
-
-        function formatEur(v) {
-            if (v >= 1000) return '€' + Math.round(v / 1000) + 'k';
-            return '€' + Math.round(v);
-        }
-
-        function formatKm(v) {
-            if (v >= 1000) return (v / 1000) + 'k';
-            return '' + v;
-        }
-
-        function niceScale(maxVal) {
-            var rough = maxVal / 5;
-            var mag = Math.pow(10, Math.floor(Math.log10(rough)));
-            var norm = rough / mag;
-            var step;
-            if (norm <= 1) step = mag;
-            else if (norm <= 2) step = 2 * mag;
-            else if (norm <= 2.5) step = 2.5 * mag;
-            else if (norm <= 5) step = 5 * mag;
-            else step = 10 * mag;
-            var niceMax = Math.ceil(maxVal / step) * step;
-            var ticks = Math.round(niceMax / step);
-            return { max: niceMax, step: step, ticks: ticks };
-        }
-
-        function drawChart() {
-            var dpr = window.devicePixelRatio || 1;
-            var rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            var w = rect.width;
-            var h = rect.height;
-            var plotW = w - PADDING.left - PADDING.right;
-            var plotH = h - PADDING.top - PADDING.bottom;
-
+        function buildData() {
             var evPrice = val(inputs.evPrice);
             var evEnergyPrice = val(inputs.evEnergyPrice);
             var evConsumption = val(inputs.evConsumption);
             var gasPrice = val(inputs.gasPrice);
             var gasEnergyPrice = val(inputs.gasEnergyPrice);
             var gasConsumption = val(inputs.gasConsumption);
-
-            var evMax = tco(evPrice, evConsumption, evEnergyPrice, MAX_KM);
-            var gasMax = tco(gasPrice, gasConsumption, gasEnergyPrice, MAX_KM);
-            var scale = niceScale(Math.max(evMax, gasMax) * 1.05);
-            var yMax = scale.max;
-
-            ctx.clearRect(0, 0, w, h);
-
-            // Grid and axes
-            ctx.strokeStyle = '#e5e5e5';
-            ctx.lineWidth = 1;
-            ctx.font = '11px system-ui, sans-serif';
-            ctx.fillStyle = '#888';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-
-            var yTicks = scale.ticks;
-            for (var i = 0; i <= yTicks; i++) {
-                var yVal = scale.step * i;
-                var y = PADDING.top + plotH - (yVal / yMax) * plotH;
-                ctx.beginPath();
-                ctx.moveTo(PADDING.left, y);
-                ctx.lineTo(PADDING.left + plotW, y);
-                ctx.stroke();
-                ctx.fillText(formatEur(yVal), PADDING.left - 6, y);
+            var evData = [];
+            var gasData = [];
+            for (var km = 0; km <= MAX_KM; km += 5000) {
+                evData.push({ x: km, y: tco(evPrice, evConsumption, evEnergyPrice, km) });
+                gasData.push({ x: km, y: tco(gasPrice, gasConsumption, gasEnergyPrice, km) });
             }
-
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            var xStep = 50000;
-            for (var km = 0; km <= MAX_KM; km += xStep) {
-                var x = PADDING.left + (km / MAX_KM) * plotW;
-                ctx.beginPath();
-                ctx.moveTo(x, PADDING.top);
-                ctx.lineTo(x, PADDING.top + plotH);
-                ctx.stroke();
-                ctx.fillText(formatKm(km), x, PADDING.top + plotH + 6);
-            }
-
-            // Axis labels
-            ctx.fillStyle = '#555';
-            ctx.font = '12px system-ui, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText('Mileage (km)', PADDING.left + plotW / 2, h - 2);
-
-            ctx.save();
-            ctx.translate(12, PADDING.top + plotH / 2);
-            ctx.rotate(-Math.PI / 2);
-            ctx.textBaseline = 'top';
-            ctx.fillText('Total Cost (€)', 0, 0);
-            ctx.restore();
-
-            // Draw lines
-            function drawLine(color, priceFn) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2.5;
-                ctx.lineJoin = 'round';
-                ctx.beginPath();
-                var steps = 100;
-                for (var i = 0; i <= steps; i++) {
-                    var km = (MAX_KM / steps) * i;
-                    var cost = priceFn(km);
-                    var x = PADDING.left + (km / MAX_KM) * plotW;
-                    var y = PADDING.top + plotH - (cost / yMax) * plotH;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            }
-
-            drawLine('#2563eb', function(km) { return tco(evPrice, evConsumption, evEnergyPrice, km); });
-            drawLine('#dc2626', function(km) { return tco(gasPrice, gasConsumption, gasEnergyPrice, km); });
-
-            // Axis border
-            ctx.strokeStyle = '#ccc';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(PADDING.left, PADDING.top);
-            ctx.lineTo(PADDING.left, PADDING.top + plotH);
-            ctx.lineTo(PADDING.left + plotW, PADDING.top + plotH);
-            ctx.stroke();
+            return { evData: evData, gasData: gasData };
         }
 
-        function setCanvasHeight() {
-            var rect = canvas.parentElement.getBoundingClientRect();
-            var isMobile = window.innerWidth <= 600;
-            canvas.style.height = (isMobile ? 250 : 350) + 'px';
-        }
+        var initial = buildData();
+
+        var chart = new Chart(document.getElementById('chart'), {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Electric',
+                        data: initial.evData,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37,99,235,.1)',
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    },
+                    {
+                        label: 'Gasoline',
+                        data: initial.gasData,
+                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(220,38,38,.1)',
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: 0,
+                        max: MAX_KM,
+                        title: { display: true, text: 'Mileage (km)' },
+                        ticks: {
+                            stepSize: 25000,
+                            callback: function(v) { return v >= 1000 ? v / 1000 + 'k' : v; },
+                        },
+                    },
+                    y: {
+                        title: { display: true, text: 'Total Cost of Ownership (€)' },
+                        ticks: {
+                            callback: function(v) { return '€' + v.toLocaleString(); },
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) { return Number(items[0].parsed.x).toLocaleString() + ' km'; },
+                            label: function(item) { return item.dataset.label + ': €' + Math.round(item.parsed.y).toLocaleString(); },
+                        },
+                    },
+                },
+            },
+        });
 
         var breakevenEl = document.getElementById('breakeven');
 
@@ -259,17 +192,20 @@
             }
         }
 
-        function redraw() { setCanvasHeight(); drawChart(); updateBreakeven(); }
+        function updateChart() {
+            var data = buildData();
+            chart.data.datasets[0].data = data.evData;
+            chart.data.datasets[1].data = data.gasData;
+            chart.update();
+            updateBreakeven();
+        }
 
-        setCanvasHeight();
-        drawChart();
         updateBreakeven();
 
         var keys = Object.keys(inputs);
         for (var i = 0; i < keys.length; i++) {
-            inputs[keys[i]].addEventListener('input', redraw);
+            inputs[keys[i]].addEventListener('input', updateChart);
         }
-        window.addEventListener('resize', redraw);
     </script>
 </body>
 </html>
