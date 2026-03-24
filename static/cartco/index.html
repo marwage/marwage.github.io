@@ -9,6 +9,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
         h1 { text-align: center; margin-bottom: 1.5rem; }
+        .lang-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: .3rem .6rem;
+            font-size: .85rem;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
+        }
+        .lang-toggle:hover { background: #eee; }
         .inputs { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
         .panel {
             background: #fff;
@@ -49,25 +62,26 @@
     </style>
 </head>
 <body>
-    <h1>Total Cost of Ownership: Electric vs Gasoline</h1>
+    <button class="lang-toggle" id="lang-toggle">DE</button>
+    <h1 id="title">Total Cost of Ownership: Electric vs Gasoline</h1>
 
     <div class="inputs">
         <div class="panel electric">
-            <h2>Electric Car</h2>
-            <label for="ev-price">Car price (€)</label>
+            <h2 id="ev-heading">Electric Car</h2>
+            <label id="ev-price-label" for="ev-price">Car price (€)</label>
             <input id="ev-price" type="number" value="74700" step="500">
-            <label for="ev-energy-price">€ / kWh</label>
+            <label id="ev-energy-price-label" for="ev-energy-price">€ / kWh</label>
             <input id="ev-energy-price" type="number" value="0.38" step="0.01">
-            <label for="ev-consumption">kWh / 100 km</label>
+            <label id="ev-consumption-label" for="ev-consumption">kWh / 100 km</label>
             <input id="ev-consumption" type="number" value="17.9" step="0.5">
         </div>
         <div class="panel gasoline">
-            <h2>Gasoline Car</h2>
-            <label for="gas-price">Car price (€)</label>
+            <h2 id="gas-heading">Gasoline Car</h2>
+            <label id="gas-price-label" for="gas-price">Car price (€)</label>
             <input id="gas-price" type="number" value="66900" step="500">
-            <label for="gas-energy-price">€ / l</label>
+            <label id="gas-energy-price-label" for="gas-energy-price">€ / l</label>
             <input id="gas-energy-price" type="number" value="2.12" step="0.01">
-            <label for="gas-consumption">l / 100 km</label>
+            <label id="gas-consumption-label" for="gas-consumption">l / 100 km</label>
             <input id="gas-consumption" type="number" value="7.6" step="0.5">
         </div>
     </div>
@@ -79,6 +93,50 @@
 
     <script>
         var MAX_KM = 250000;
+        var lang = 'en';
+
+        var i18n = {
+            en: {
+                title: 'Total Cost of Ownership: Electric vs Gasoline',
+                evHeading: 'Electric Car',
+                gasHeading: 'Gasoline Car',
+                carPrice: 'Car price (€)',
+                evEnergyPrice: '€ / kWh',
+                evConsumption: 'kWh / 100 km',
+                gasEnergyPrice: '€ / l',
+                gasConsumption: 'l / 100 km',
+                xAxis: 'Mileage (km)',
+                yAxis: 'Total Cost of Ownership (€)',
+                evLabel: 'Electric',
+                gasLabel: 'Gasoline',
+                toggleLabel: 'DE',
+                breakevenAt: function(km) { return 'Break-even at ' + km + ' km.'; },
+                evAlwaysCheaper: 'The electric car is always cheaper.',
+                gasAlwaysCheaper: 'The gasoline car is always cheaper.',
+                noBreakeven: 'No break-even within 250,000 km.',
+            },
+            de: {
+                title: 'Gesamtkosten: Elektro vs. Benziner',
+                evHeading: 'Elektroauto',
+                gasHeading: 'Benziner',
+                carPrice: 'Kaufpreis (€)',
+                evEnergyPrice: '€ / kWh',
+                evConsumption: 'kWh / 100 km',
+                gasEnergyPrice: '€ / l',
+                gasConsumption: 'l / 100 km',
+                xAxis: 'Kilometerstand (km)',
+                yAxis: 'Gesamtkosten (€)',
+                evLabel: 'Elektro',
+                gasLabel: 'Benziner',
+                toggleLabel: 'EN',
+                breakevenAt: function(km) { return 'Gleichstand bei ' + km + ' km.'; },
+                evAlwaysCheaper: 'Das Elektroauto ist immer günstiger.',
+                gasAlwaysCheaper: 'Der Benziner ist immer günstiger.',
+                noBreakeven: 'Kein Gleichstand innerhalb von 250.000 km.',
+            },
+        };
+
+        function t() { return i18n[lang]; }
 
         var inputs = {
             evPrice: document.getElementById('ev-price'),
@@ -118,7 +176,7 @@
             data: {
                 datasets: [
                     {
-                        label: 'Electric',
+                        label: t().evLabel,
                         data: initial.evData,
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37,99,235,.1)',
@@ -126,7 +184,7 @@
                         borderWidth: 2,
                     },
                     {
-                        label: 'Gasoline',
+                        label: t().gasLabel,
                         data: initial.gasData,
                         borderColor: '#dc2626',
                         backgroundColor: 'rgba(220,38,38,.1)',
@@ -144,14 +202,14 @@
                         type: 'linear',
                         min: 0,
                         max: MAX_KM,
-                        title: { display: true, text: 'Mileage (km)' },
+                        title: { display: true, text: t().xAxis },
                         ticks: {
                             stepSize: 25000,
                             callback: function(v) { return v >= 1000 ? v / 1000 + 'k' : v; },
                         },
                     },
                     y: {
-                        title: { display: true, text: 'Total Cost of Ownership (€)' },
+                        title: { display: true, text: t().yAxis },
                         ticks: {
                             callback: function(v) { return '€' + v.toLocaleString(); },
                         },
@@ -171,6 +229,7 @@
         var breakevenEl = document.getElementById('breakeven');
 
         function updateBreakeven() {
+            var s = t();
             var evPrice = val(inputs.evPrice);
             var evCostPerKm = val(inputs.evConsumption) / 100 * val(inputs.evEnergyPrice);
             var gasCostPerKm = val(inputs.gasConsumption) / 100 * val(inputs.gasEnergyPrice);
@@ -178,18 +237,39 @@
             var diff = gasCostPerKm - evCostPerKm;
             if (diff <= 0) {
                 breakevenEl.textContent = evPrice <= gasPrice
-                    ? 'The electric car is always cheaper.'
-                    : 'The gasoline car is always cheaper.';
+                    ? s.evAlwaysCheaper
+                    : s.gasAlwaysCheaper;
                 return;
             }
             var km = (evPrice - gasPrice) / diff;
             if (km <= 0) {
-                breakevenEl.textContent = 'The electric car is always cheaper.';
+                breakevenEl.textContent = s.evAlwaysCheaper;
             } else if (km > MAX_KM) {
-                breakevenEl.textContent = 'No break-even within 250,000 km.';
+                breakevenEl.textContent = s.noBreakeven;
             } else {
-                breakevenEl.textContent = 'Break-even at ' + Math.round(km).toLocaleString() + ' km.';
+                breakevenEl.textContent = s.breakevenAt(Math.round(km).toLocaleString());
             }
+        }
+
+        function applyLanguage() {
+            var s = t();
+            document.documentElement.lang = lang;
+            document.getElementById('title').textContent = s.title;
+            document.getElementById('ev-heading').textContent = s.evHeading;
+            document.getElementById('gas-heading').textContent = s.gasHeading;
+            document.getElementById('ev-price-label').textContent = s.carPrice;
+            document.getElementById('ev-energy-price-label').textContent = s.evEnergyPrice;
+            document.getElementById('ev-consumption-label').textContent = s.evConsumption;
+            document.getElementById('gas-price-label').textContent = s.carPrice;
+            document.getElementById('gas-energy-price-label').textContent = s.gasEnergyPrice;
+            document.getElementById('gas-consumption-label').textContent = s.gasConsumption;
+            document.getElementById('lang-toggle').textContent = s.toggleLabel;
+            chart.data.datasets[0].label = s.evLabel;
+            chart.data.datasets[1].label = s.gasLabel;
+            chart.options.scales.x.title.text = s.xAxis;
+            chart.options.scales.y.title.text = s.yAxis;
+            chart.update();
+            updateBreakeven();
         }
 
         function updateChart() {
@@ -201,6 +281,11 @@
         }
 
         updateBreakeven();
+
+        document.getElementById('lang-toggle').addEventListener('click', function() {
+            lang = lang === 'en' ? 'de' : 'en';
+            applyLanguage();
+        });
 
         var keys = Object.keys(inputs);
         for (var i = 0; i < keys.length; i++) {
