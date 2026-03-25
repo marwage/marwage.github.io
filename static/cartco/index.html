@@ -160,13 +160,16 @@
             var gasPrice = val(inputs.gasPrice);
             var gasEnergyPrice = val(inputs.gasEnergyPrice);
             var gasConsumption = val(inputs.gasConsumption);
-            var evData = [];
-            var gasData = [];
-            for (var km = 0; km <= MAX_KM; km += 5000) {
-                evData.push({ x: km, y: tco(evPrice, evConsumption, evEnergyPrice, km) });
-                gasData.push({ x: km, y: tco(gasPrice, gasConsumption, gasEnergyPrice, km) });
-            }
-            return { evData: evData, gasData: gasData };
+            return {
+                evData: [
+                    { x: 0, y: tco(evPrice, evConsumption, evEnergyPrice, 0) },
+                    { x: MAX_KM, y: tco(evPrice, evConsumption, evEnergyPrice, MAX_KM) },
+                ],
+                gasData: [
+                    { x: 0, y: tco(gasPrice, gasConsumption, gasEnergyPrice, 0) },
+                    { x: MAX_KM, y: tco(gasPrice, gasConsumption, gasEnergyPrice, MAX_KM) },
+                ],
+            };
         }
 
         var initial = buildData();
