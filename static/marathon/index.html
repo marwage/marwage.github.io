@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marathon Pace Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
+        h1 { text-align: center; margin-bottom: 1.5rem; }
+        .chart-wrapper {
+            position: relative;
+            max-width: 900px;
+            height: 500px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .chart-wrapper { height: 350px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Marathon Pace Chart</h1>
+
+    <div class="chart-wrapper">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        var MARATHON_KM = 42.195;
+        var MIN_PACE_S = 170;
+        var MAX_PACE_S = 345;
+        var marathonData = [
+            { x: MIN_PACE_S, y: MIN_PACE_S * MARATHON_KM },
+            { x: MAX_PACE_S, y: MAX_PACE_S * MARATHON_KM },
+        ];
+
+        function formatPace(totalSeconds) {
+            var m = Math.floor(totalSeconds / 60);
+            var s = Math.round(totalSeconds % 60);
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function formatFinishTime(totalSeconds) {
+            var h = Math.floor(totalSeconds / 3600);
+            var m = Math.floor((totalSeconds % 3600) / 60);
+            var s = Math.round(totalSeconds % 60);
+            return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        new Chart(document.getElementById('chart'), {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Marathon',
+                    data: marathonData,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,.1)',
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    fill: false,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: MIN_PACE_S,
+                        max: MAX_PACE_S,
+                        title: { display: true, text: 'Pace (min/km)' },
+                        ticks: {
+                            stepSize: 30,
+                            callback: function(v) { return formatPace(v); },
+                        },
+                    },
+                    y: {
+                        title: { display: true, text: 'Finish Time' },
+                        ticks: {
+                            stepSize: 900,
+                            callback: function(v) {
+                                var h = Math.floor(v / 3600);
+                                var m = Math.floor((v % 3600) / 60);
+                                return h + ':' + (m < 10 ? '0' : '') + m;
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) { return formatPace(items[0].parsed.x) + ' min/km'; },
+                            label: function(item) { return item.dataset.label + ': ' + formatFinishTime(item.parsed.y); },
+                        },
+                    },
+                },
+            },
+        });
+    </script>
+</body>
+</html>
