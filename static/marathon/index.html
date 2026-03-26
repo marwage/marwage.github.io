@@ -37,6 +37,10 @@
         <canvas id="speed-chart"></canvas>
     </div>
 
+    <div class="chart-wrapper" style="margin-top: 2rem;">
+        <canvas id="speed-finish-chart"></canvas>
+    </div>
+
     <script>
         var MARATHON_KM = 42.195;
         var MIN_PACE_S = 170;
@@ -68,7 +72,7 @@
             type: 'line',
             data: {
                 datasets: [{
-                    label: 'Speed',
+                    label: 'Pace',
                     data: speedData,
                     borderColor: '#16a34a',
                     backgroundColor: 'rgba(22,163,74,.1)',
@@ -101,6 +105,61 @@
                         callbacks: {
                             title: function(items) { return formatPace(items[0].parsed.x) + ' min/km'; },
                             label: function(item) { return item.parsed.y.toFixed(1) + ' km/h'; },
+                        },
+                    },
+                },
+            },
+        });
+
+        var SPEED_MIN = Math.floor(3600 / MAX_PACE_S);
+        var SPEED_MAX = Math.ceil(3600 / MIN_PACE_S);
+        var speedFinishData = [];
+        for (var i = SPEED_MIN * 10; i <= SPEED_MAX * 10; i++) {
+            var s = i / 10;
+            speedFinishData.push({ x: s, y: MARATHON_KM / s * 3600 });
+        }
+
+        new Chart(document.getElementById('speed-finish-chart'), {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Marathon',
+                    data: speedFinishData,
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220,38,38,.1)',
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    fill: false,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: SPEED_MIN,
+                        max: SPEED_MAX,
+                        title: { display: true, text: 'Speed (km/h)' },
+                    },
+                    y: {
+                        title: { display: true, text: 'Finish Time' },
+                        ticks: {
+                            stepSize: 900,
+                            callback: function(v) {
+                                var h = Math.floor(v / 3600);
+                                var m = Math.floor((v % 3600) / 60);
+                                return h + ':' + (m < 10 ? '0' : '') + m;
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) { return items[0].parsed.x.toFixed(1) + ' km/h'; },
+                            label: function(item) { return item.dataset.label + ': ' + formatFinishTime(item.parsed.y); },
                         },
                     },
                 },
