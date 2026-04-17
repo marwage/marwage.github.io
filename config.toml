@@ -1,60 +1,39 @@
 baseURL = "https://www.marcelwagenlaender.com"
 languageCode = "en-gb"
 title = "Marcel Wagenländer"
-theme = "introduction"
 
 [params]
-    themeStyle                   = "light"                 # Choose "light" or "dark" or "auto"
-    favicon                      = "/img/fav.ico"          # Path to favicon file
-    showRSSButton                = false                   # Show rss button in navigation
-    fadeIn                       = false                   # Turn on/off the fade-in effect
-    fadeInIndex                  = false                   # Turn on/off the fade-in effect on the index page even if fade-in was otherwise turned off
-    dateFormat                   = "2 January 2006"
-    email                        = "youremail@email.com"   # E-mail address for contact section
-    # customCSS                  = ["bar.css"]             # Include custom css files placed under assets/
-    # customJS                   = ["foo.js"]              # Include custom JavaScript files placed under assets/
+    dateFormat = "2 January 2006"
+    description = "Marcel Wagenländer — AI Systems Researcher"
+    author = "Marcel Wagenländer"
 
-    # Configure the home page
-    [params.home]
-        introHeight              = "medium"                # Input either "medium" or "large" or "fullheight"
-        showLatest               = true                    # Show latest blog post summary
-        showAllPosts             = false                   # Set true to list all posts on home page, or set false to link to separate blog list page
-        allPostsArchiveFormat    = true                    # show all posts in an archive format
-        numberOfProjectsToShow   = 3                       # Maximum number of projects to show on home page. Unset or comment out to show all projects
-        localTime                = false                   # Show your current local time in contact section
-        timeZone                 = "Europe/London"         # Your timezone as in the TZ* column of this list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-        timeFormat               = "en-GB"                 # Language specific format to use
-    [params.projects]
-        useTwoColumns            = false                   # Use a layout with two columns instead of three
+[[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+[[menu.main]]
+    name = "Blog"
+    url = "/blog/"
+    weight = 2
 
-    # Social icons appear in introduction and contact section. Add as many more as you like.
-    # Icon pack "fab" includes social network icons, see: https://fontawesome.com/icons?d=gallery&s=brands&m=free
-    # Icon pack "fas" includes solid style icons, see: https://fontawesome.com/icons?d=gallery&s=solid&m=free
-    [[params.social]]
-        url   = "https://mastodon.social/@marcelwagenlander"
-        icon  = "mastodon"
-        icon_pack = "fab"
-    [[params.social]]
-        url   = "https://www.linkedin.com/in/marcel-wagenlaender"
-        icon  = "linkedin-in"
-        icon_pack = "fab"
-    [[params.social]]
-        url   = "https://scholar.google.com/citations?user=HrCWNs0AAAAJ"
-        icon  = "graduation-cap" # icon name without the 'fa-'
-        icon_pack = "fas"
-    [[params.social]]
-        url = "https://github.com/marwage"
-        icon = "github"
-        icon_pack = "fab"
-    [[params.social]]
-        url = "https://www.instagram.com/marcelsperspective"
-        icon = "instagram"
-        icon_pack = "fab"
-    [[params.social]]
-        url = "https://bsky.app/profile/marcelwagenlander.com"
-        icon = "b"
-        icon_pack = "fas"
-    [[params.social]]
-        url = "mailto:helloαmarcel.systems"
-        icon = "paper-plane"
-        icon_pack = "fas"
+[[params.social]]
+    name = "mastodon"
+    url  = "https://mastodon.social/@marcelwagenlander"
+[[params.social]]
+    name = "linkedin"
+    url  = "https://www.linkedin.com/in/marcel-wagenlaender"
+[[params.social]]
+    name = "scholar"
+    url  = "https://scholar.google.com/citations?user=HrCWNs0AAAAJ"
+[[params.social]]
+    name = "github"
+    url  = "https://github.com/marwage"
+[[params.social]]
+    name = "instagram"
+    url  = "https://www.instagram.com/marcelsperspective"
+[[params.social]]
+    name = "bluesky"
+    url  = "https://bsky.app/profile/marcelwagenlander.com"
+[[params.social]]
+    name = "email"
+    url  = "mailto:helloαmarcel.systems"

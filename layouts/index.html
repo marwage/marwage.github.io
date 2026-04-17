@@ -1,0 +1,33 @@
+{{ define "main" }}
+<section class="hero">
+  {{ with .Site.GetPage "/home" }}
+  <h1>{{ .Title }}</h1>
+  <div class="subtitle">{{ .Content }}</div>
+  {{ end }}
+  {{ partial "social.html" . }}
+</section>
+
+{{ with .Site.GetPage "/home" }}
+  {{ $home := . }}
+  {{ range sort (.Resources.ByType "page") "Params.weight" }}
+    {{ $section := . }}
+  <section class="home-section" id="{{ .Title | urlize }}">
+    {{ with .Params.image }}
+      {{ $img := $home.Resources.GetMatch . }}
+      {{ with $img }}
+      <h1>{{ $section.Title }}</h1>
+      <div class="about-grid">
+        <img src="{{ .RelPermalink }}" alt="Portrait">
+        <div>
+          {{ $section.Content }}
+        </div>
+      </div>
+      {{ end }}
+    {{ else }}
+      <h1>{{ .Title }}</h1>
+      {{ .Content }}
+    {{ end }}
+  </section>
+  {{ end }}
+{{ end }}
+{{ end }}
