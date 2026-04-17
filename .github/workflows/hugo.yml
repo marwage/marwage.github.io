@@ -35,13 +35,8 @@ jobs:
         with:
           hugo-version: 0.138.0
           extended: true
-      - name: Install PostCSS
-        run: |
-          npm i -g postcss postcss-cli autoprefixer
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.LanguageCode }}">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body>
+  {{ partial "nav.html" . }}
+  <main class="container">
+    {{ block "main" . }}{{ end }}
+  </main>
+  <footer class="site-footer">
+    <div class="container">
+      &copy; {{ now.Year }} {{ .Site.Title }}
+    </div>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var toggle = document.querySelector('.nav-toggle');
+      var menu = document.querySelector('.nav-links');
+      if (toggle && menu) {
+        toggle.addEventListener('click', function() {
+          toggle.classList.toggle('active');
+          menu.classList.toggle('active');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
