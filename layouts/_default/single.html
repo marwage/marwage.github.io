@@ -10,6 +10,6 @@
   <div class="post-content">
     {{ .Content }}
   </div>
-  <a href="{{ .Parent.RelPermalink }}" class="back-link">&larr; Back</a>
+  {{ with .Parent }}<a href="{{ .RelPermalink }}" class="back-link">&larr; Back</a>{{ end }}
 </article>
 {{ end }}

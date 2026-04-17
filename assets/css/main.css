@@ -204,6 +204,7 @@ hr {
   border-top: 1px solid var(--color-border);
 }
 
+.home-section h1,
 .home-section h2 {
   margin-bottom: 1rem;
 }

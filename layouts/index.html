@@ -15,6 +15,7 @@
     {{ with .Params.image }}
       {{ $img := $home.Resources.GetMatch . }}
       {{ with $img }}
+      <h1>{{ $section.Title }}</h1>
       <div class="about-grid">
         <img src="{{ .RelPermalink }}" alt="Portrait">
         <div>
