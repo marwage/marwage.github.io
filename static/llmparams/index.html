@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How many parameters fit on your GPU cluster?</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
+        h1 { text-align: center; margin-bottom: .5rem; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 2rem; font-size: .95rem; max-width: 720px; margin-left: auto; margin-right: auto; }
+
+        .inputs {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .panel {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-width: 260px;
+            flex: 1 1 260px;
+            max-width: 320px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        .panel h2 { margin-bottom: 1rem; font-size: 1.1rem; color: #2563eb; }
+        .panel.bytes h2 { color: #16a34a; }
+        .panel.training h2 { color: #dc2626; }
+
+        label { display: block; margin-bottom: .25rem; font-size: .9rem; }
+        input[type="number"], select {
+            width: 100%;
+            padding: .4rem .6rem;
+            margin-bottom: .75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            background: #fff;
+        }
+        .derived {
+            margin-top: .5rem;
+            padding: .5rem .6rem;
+            background: #f0fdf4;
+            border-radius: 4px;
+            font-size: .9rem;
+            color: #166534;
+        }
+        .derived.warn { background: #fef2f2; color: #991b1b; }
+        .derived strong { font-size: 1rem; }
+
+        .formula-wrapper {
+            max-width: 900px;
+            margin: 0 auto 2rem;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        .formula-wrapper h3 {
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #888;
+            margin-bottom: .75rem;
+        }
+        .formula-block {
+            margin: .25rem 0 .5rem;
+            overflow-x: auto;
+            padding: .25rem 0;
+        }
+        .formula-block:last-child { margin-bottom: .25rem; }
+        .step { margin-bottom: 1.75rem; }
+        .step:last-child { margin-bottom: 0; }
+        .step-text {
+            font-size: .9rem;
+            color: #555;
+            margin-bottom: .5rem;
+            line-height: 1.6;
+        }
+        .step-text strong { color: #222; font-weight: 600; }
+
+        .result-wrapper {
+            max-width: 900px;
+            margin: 0 auto 2rem;
+            background: #fff;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+            text-align: center;
+        }
+        .result-scientific {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #2563eb;
+            margin-bottom: .5rem;
+        }
+        .result-human {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .result-caption {
+            font-size: .9rem;
+            color: #666;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            line-height: 1.6;
+        }
+        .result-warn {
+            color: #991b1b;
+            font-weight: 600;
+        }
+
+        .notes {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+            font-size: .9rem;
+            color: #555;
+            line-height: 1.55;
+        }
+        .notes h3 {
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #888;
+            margin-bottom: .75rem;
+        }
+        .notes ul { padding-left: 1.25rem; }
+        .notes li { margin-bottom: .35rem; }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .inputs { gap: 1rem; }
+            .panel { min-width: 0; width: 100%; max-width: none; }
+            .result-scientific { font-size: 1.6rem; }
+            .result-human { font-size: 1.05rem; }
+            .formula-wrapper, .result-wrapper, .notes { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>How many parameters fit on your GPU cluster?</h1>
+    <p class="subtitle">Adam mixed-precision training. Each GPU's memory is split between model state (parameters, gradients, optimizer state) and activations. Edit any value to recompute.</p>
+
+    <div class="inputs">
+        <div class="panel cluster">
+            <h2>Cluster</h2>
+            <label for="gpus">Number of GPUs (<strong>G</strong>)</label>
+            <input id="gpus" type="number" value="100000" step="1000" min="1">
+            <label for="memPerGpu">Memory per GPU in GB (<strong>M<sub>GPU</sub></strong>)</label>
+            <input id="memPerGpu" type="number" value="80" step="1" min="1">
+        </div>
+
+        <div class="panel bytes">
+            <h2>Bytes / parameter</h2>
+            <label for="bWeights">Weights (<strong>b<sub>w</sub></strong>)</label>
+            <input id="bWeights" type="number" value="2" step="1" min="0">
+            <label for="bGrads">Gradients (<strong>b<sub>g</sub></strong>)</label>
+            <input id="bGrads" type="number" value="2" step="1" min="0">
+            <label for="bMaster">Master weights (<strong>b<sub>master</sub></strong>)</label>
+            <input id="bMaster" type="number" value="4" step="1" min="0">
+            <label for="bM">First moment (<strong>b<sub>m</sub></strong>)</label>
+            <input id="bM" type="number" value="4" step="1" min="0">
+            <label for="bV">Second moment (<strong>b<sub>v</sub></strong>)</label>
+            <input id="bV" type="number" value="4" step="1" min="0">
+            <div class="derived">Total: <strong id="bparam-total">16</strong> B / param</div>
+        </div>
+
+        <div class="panel training">
+            <h2>Architecture &amp; training</h2>
+            <label for="seqLen">Sequence length (<strong>s</strong>)</label>
+            <input id="seqLen" type="number" value="4096" step="128" min="1">
+            <label for="miniBatch">Batch size (<strong>b</strong>)</label>
+            <input id="miniBatch" type="number" value="64" step="1" min="1">
+            <label for="aspectRatio">Aspect ratio h/L (<strong>&alpha;</strong>)</label>
+            <input id="aspectRatio" type="number" value="128" step="8" min="1">
+            <label for="headDim">Head dim (<strong>d</strong>)</label>
+            <input id="headDim" type="number" value="128" step="8" min="1">
+            <div class="derived" id="arch-derived">Solved: <strong id="arch-display">—</strong></div>
+        </div>
+    </div>
+
+    <div class="formula-wrapper">
+        <h3>Computation</h3>
+
+        <div class="step">
+            <p class="step-text">
+                <strong>1. Bytes per parameter</strong> (<strong>B<sub>param</sub></strong>) &mdash; sum of bytes per parameter for weights (<strong>b<sub>w</sub></strong>), gradients (<strong>b<sub>g</sub></strong>), master weights (<strong>b<sub>master</sub></strong>), and the two Adam moments (<strong>b<sub>m</sub></strong>, <strong>b<sub>v</sub></strong>).
+            </p>
+            <div class="formula-block" id="symbolic-bparam"></div>
+            <div class="formula-block" id="numeric-bparam"></div>
+        </div>
+
+        <div class="step">
+            <p class="step-text">
+                <strong>2. Model architecture.</strong> A standard transformer has roughly <strong>12 h&sup2;</strong> parameters per layer (4h&sup2; attention QKVO + 8h&sup2; FFN with 4&times; intermediate dim). The aspect ratio (<strong>&alpha;</strong>&nbsp;=&nbsp;<strong>h</strong>&nbsp;/&nbsp;<strong>L</strong>) fixes the depth-vs-width shape, and the head dimension (<strong>d</strong>) sets the number of attention heads (<strong>a</strong>). So total parameters (<strong>N</strong>), layer count (<strong>L</strong>), and hidden dim (<strong>h</strong>) are all coupled.
+            </p>
+            <div class="formula-block" id="symbolic-arch"></div>
+            <div class="formula-block" id="numeric-arch"></div>
+        </div>
+
+        <div class="step">
+            <p class="step-text">
+                <strong>3. Activation memory</strong> (<strong>A</strong>) &mdash; bytes needed to store all forward activations for one pass through the model (bf16, no recomputation), per Korthikanti et al. (2022). Scales with sequence length (<strong>s</strong>) and batch size (<strong>b</strong>).
+            </p>
+            <div class="formula-block" id="symbolic-act"></div>
+            <div class="formula-block" id="numeric-act"></div>
+        </div>
+
+        <div class="step">
+            <p class="step-text">
+                <strong>4. Constraint.</strong> The pooled cluster &mdash; <strong>G</strong> GPUs of <strong>M<sub>GPU</sub></strong> memory each &mdash; must hold both the model state (<strong>N&nbsp;&middot;&nbsp;B<sub>param</sub></strong>) and the activations (<strong>A</strong>). We bisect over <strong>N</strong> to find the largest self-consistent model that fits.
+            </p>
+            <div class="formula-block" id="symbolic-main"></div>
+            <div class="formula-block" id="numeric-main"></div>
+            <div class="formula-block" id="symbolic-main2"></div>
+            <div class="formula-block" id="numeric-main2"></div>
+        </div>
+    </div>
+
+    <div class="result-wrapper">
+        <div class="result-scientific" id="result-scientific">—</div>
+        <div class="result-human" id="result-human">—</div>
+        <div class="result-caption" id="result-caption">—</div>
+    </div>
+
+    <div class="notes">
+        <h3>How the constraint works</h3>
+        <ul>
+            <li>Cluster is treated as one big pooled GPU with <em>G · M<sub>GPU</sub></em> of total memory, holding one copy of the model and one forward pass worth of activations. No parallelism scheme (DP / TP / PP / ZeRO) is modeled.</li>
+            <li>The model architecture is coupled to N: standard transformer has ~<em>12 h²</em> parameters per layer (4h² attention QKVO + 8h² FFN with 4× intermediate dim), so <em>N ≈ 12 · L · h²</em>. Aspect ratio fixes the shape: <em>h = α · L</em>; head count follows from <em>a = h / d</em>.</li>
+            <li>Activations use the Korthikanti et al. (2022) formula <em>A = L · s · b · (34h + 5as)</em> bytes (bf16, full storage, no checkpointing).</li>
+            <li>Constraint: <em>N · B<sub>param</sub> + A ≤ G · M<sub>GPU</sub></em>. We bisect over N (everything else follows from N and the architectural ratios) to find the largest self-consistent model that fits.</li>
+            <li>Ignored: embedding / vocab params, comms buffers, framework overhead.</li>
+        </ul>
+    </div>
+
+    <script>
+        function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+        function readInputs() {
+            return {
+                gpus: val('gpus'),
+                memPerGpu: val('memPerGpu'),
+                bWeights: val('bWeights'),
+                bGrads: val('bGrads'),
+                bMaster: val('bMaster'),
+                bM: val('bM'),
+                bV: val('bV'),
+                seqLen: val('seqLen'),
+                miniBatch: val('miniBatch'),
+                aspectRatio: val('aspectRatio'),
+                headDim: val('headDim'),
+            };
+        }
+
+        function bytesPerParam(i) {
+            return i.bWeights + i.bGrads + i.bMaster + i.bM + i.bV;
+        }
+
+        // Pooled framing: one model copy, one forward pass, total memory G·M_GPU.
+        // Given N and architectural ratios, derive L, h, a, total activations, total model state.
+        function deriveFromN(i, N) {
+            var alpha = i.aspectRatio;
+            var d = i.headDim;
+            var L = Math.cbrt(N / (12 * alpha * alpha));
+            var h = alpha * L;
+            var a = h / d;
+            var act = L * i.seqLen * i.miniBatch * (34 * h + 5 * a * i.seqLen);
+            var state = N * bytesPerParam(i);
+            return { L: L, h: h, a: a, act: act, state: state };
+        }
+
+        // Bisect for largest N such that state(N) + act(N) <= G·M_GPU
+        function solveMaxN(i) {
+            var bp = bytesPerParam(i);
+            if (bp <= 0 || i.aspectRatio <= 0 || i.headDim <= 0 || i.gpus <= 0) return 0;
+            var totalMem = i.gpus * i.memPerGpu * 1e9;
+            var lo = 0;
+            var hi = totalMem / bp; // unconstrained upper bound (no activations)
+            var dHi = deriveFromN(i, hi);
+            if (dHi.act + dHi.state <= totalMem) return hi;
+            for (var iter = 0; iter < 80; iter++) {
+                var mid = (lo + hi) / 2;
+                var d = deriveFromN(i, mid);
+                if (d.act + d.state <= totalMem) lo = mid;
+                else hi = mid;
+            }
+            return lo;
+        }
+
+        function formatScientificLatex(n) {
+            if (!isFinite(n) || n <= 0) return '0';
+            var exp = Math.floor(Math.log10(n));
+            var mantissa = n / Math.pow(10, exp);
+            var m = mantissa.toFixed(2).replace(/\.?0+$/, '');
+            return m + ' \\times 10^{' + exp + '}';
+        }
+
+        function formatScientificHTML(n) {
+            if (!isFinite(n) || n <= 0) return '0';
+            var exp = Math.floor(Math.log10(n));
+            var mantissa = n / Math.pow(10, exp);
+            var m = mantissa.toFixed(2).replace(/\.?0+$/, '');
+            return m + ' &times; 10<sup>' + exp + '</sup>';
+        }
+
+        function formatHuman(n) {
+            if (!isFinite(n) || n <= 0) return '0';
+            if (n >= 1e12) return trim(n / 1e12) + ' trillion';
+            if (n >= 1e9) return trim(n / 1e9) + ' billion';
+            if (n >= 1e6) return trim(n / 1e6) + ' million';
+            return Math.round(n).toLocaleString();
+        }
+
+        function formatBytes(n) {
+            if (!isFinite(n) || n <= 0) return '0 B';
+            if (n >= 1e15) return trim(n / 1e15) + ' PB';
+            if (n >= 1e12) return trim(n / 1e12) + ' TB';
+            if (n >= 1e9)  return trim(n / 1e9)  + ' GB';
+            if (n >= 1e6)  return trim(n / 1e6)  + ' MB';
+            return Math.round(n) + ' B';
+        }
+
+        function trim(x) {
+            if (x >= 100) return x.toFixed(0);
+            if (x >= 10)  return x.toFixed(1).replace(/\.0$/, '');
+            return x.toFixed(2).replace(/\.?0+$/, '');
+        }
+
+        function renderSymbolic() {
+            katex.render(
+                'B_{\\text{param}} = b_w + b_g + b_{\\text{master}} + b_m + b_v',
+                document.getElementById('symbolic-bparam'),
+                { displayMode: true, throwOnError: false }
+            );
+            katex.render(
+                'N = 12 \\cdot L \\cdot h^2, \\quad h = \\alpha \\cdot L, \\quad a = h / d',
+                document.getElementById('symbolic-arch'),
+                { displayMode: true, throwOnError: false }
+            );
+            katex.render(
+                'A = L \\cdot s \\cdot b \\cdot (34h + 5as)',
+                document.getElementById('symbolic-act'),
+                { displayMode: true, throwOnError: false }
+            );
+            katex.render(
+                'N \\cdot B_{\\text{param}} + A \\;\\leq\\; G \\cdot M_{\\text{GPU}}',
+                document.getElementById('symbolic-main'),
+                { displayMode: true, throwOnError: false }
+            );
+            katex.render(
+                'N \\;\\leq\\; \\frac{G \\cdot M_{\\text{GPU}} - A}{B_{\\text{param}}}',
+                document.getElementById('symbolic-main2'),
+                { displayMode: true, throwOnError: false }
+            );
+        }
+
+        function fmtInt(x) {
+            if (!isFinite(x)) return '0';
+            return Math.round(x).toString();
+        }
+
+        function renderAll() {
+            var i = readInputs();
+            var bp = bytesPerParam(i);
+            var memPerGpuBytes = i.memPerGpu * 1e9;
+            var N = solveMaxN(i);
+            var derived = deriveFromN(i, N);
+
+            document.getElementById('bparam-total').textContent = bp;
+
+            var archDisplay = document.getElementById('arch-display');
+            var archDerived = document.getElementById('arch-derived');
+            if (N > 0) {
+                archDisplay.innerHTML =
+                    'L=' + fmtInt(derived.L) +
+                    ', h=' + fmtInt(derived.h) +
+                    ', a=' + fmtInt(derived.a);
+                archDerived.classList.remove('warn');
+            } else {
+                archDisplay.textContent = 'no model fits';
+                archDerived.classList.add('warn');
+            }
+
+            renderSymbolic();
+
+            var bparamNumeric =
+                'B_{\\text{param}} = ' +
+                i.bWeights + ' + ' + i.bGrads + ' + ' + i.bMaster + ' + ' + i.bM + ' + ' + i.bV +
+                ' = ' + bp + ' \\text{ B}';
+            katex.render(bparamNumeric, document.getElementById('numeric-bparam'),
+                { displayMode: true, throwOnError: false });
+
+            var L = derived.L, h = derived.h, a = derived.a;
+            var archNumeric =
+                'L = ' + fmtInt(L) + ', \\quad h = ' + fmtInt(h) +
+                ', \\quad a = ' + fmtInt(a) +
+                ', \\quad N \\approx ' + formatScientificLatex(N);
+            katex.render(archNumeric, document.getElementById('numeric-arch'),
+                { displayMode: true, throwOnError: false });
+
+            var actNumeric =
+                'A = ' + fmtInt(L) + ' \\cdot ' + i.seqLen + ' \\cdot ' + i.miniBatch +
+                ' \\cdot (34 \\cdot ' + fmtInt(h) + ' + 5 \\cdot ' + fmtInt(a) + ' \\cdot ' + i.seqLen + ')' +
+                ' \\approx ' + formatScientificLatex(derived.act) + ' \\text{ B}';
+            katex.render(actNumeric, document.getElementById('numeric-act'),
+                { displayMode: true, throwOnError: false });
+
+            var gpusStr = i.gpus.toLocaleString('en-US');
+            var totalMem = i.gpus * memPerGpuBytes;
+            var mainNumeric =
+                formatScientificLatex(N) + ' \\cdot ' + bp +
+                ' + ' + formatScientificLatex(derived.act) +
+                ' \\approx ' + formatScientificLatex(derived.state + derived.act) +
+                ' \\text{ B} \\;\\le\\; ' + gpusStr + ' \\cdot ' + formatScientificLatex(memPerGpuBytes) +
+                ' = ' + formatScientificLatex(totalMem) + ' \\text{ B}';
+            katex.render(mainNumeric, document.getElementById('numeric-main'),
+                { displayMode: true, throwOnError: false });
+
+            var main2Numeric =
+                'N \\;\\leq\\; \\frac{' + formatScientificLatex(totalMem) +
+                ' - ' + formatScientificLatex(derived.act) + '}{' + bp + '}' +
+                ' \\approx ' + formatScientificLatex(N);
+            katex.render(main2Numeric, document.getElementById('numeric-main2'),
+                { displayMode: true, throwOnError: false });
+
+            var scientificEl = document.getElementById('result-scientific');
+            var humanEl = document.getElementById('result-human');
+            var captionEl = document.getElementById('result-caption');
+
+            if (N <= 0) {
+                scientificEl.innerHTML = '<span class="result-warn">No model fits</span>';
+                humanEl.textContent = 'Activations alone exceed cluster memory — try smaller s, b, or larger d.';
+                captionEl.textContent = '';
+            } else {
+                scientificEl.innerHTML = formatScientificHTML(N);
+                humanEl.textContent = '≈ ' + formatHuman(N) + ' parameters';
+                captionEl.innerHTML =
+                    'Cluster: model state ' + formatBytes(derived.state) +
+                    ' + activations ' + formatBytes(derived.act) +
+                    ' ≈ ' + formatBytes(derived.state + derived.act) +
+                    ' / ' + formatBytes(totalMem);
+            }
+        }
+
+        function init() {
+            renderAll();
+            var ids = ['gpus', 'memPerGpu', 'bWeights', 'bGrads', 'bMaster', 'bM', 'bV',
+                       'seqLen', 'miniBatch', 'aspectRatio', 'headDim'];
+            for (var i = 0; i < ids.length; i++) {
+                document.getElementById(ids[i]).addEventListener('input', renderAll);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
