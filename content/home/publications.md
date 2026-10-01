@@ -17,7 +17,7 @@ USENIX Symposium on Operating Systems Design and Implementation (OSDI), 2020
 Yanda Tao, Pedro F. Silvestre, **Marcel Wagenländer**, and Peter Pietzuch\
 arXiv
 ## [Scepsy: Serving Agentic Workflows Using Aggregate LLM Pipelines](https://arxiv.org/abs/2604.15186)
-**Marcel Wagenländer**\*, Otto White\*, Britannio Jarrett, Pedro F. Silvestre, Yanda Tao, Guo Li, Huanzhou Zhu, Llúis Vilanova, Peter Pietzuch\
+Otto White\*, **Marcel Wagenländer**\*, Britannio Jarrett, Xijin Zhou, Yanda Tao, Pedro F. Silvestre, Guo Li, Huanzhou Zhu, Lluís Vilanova, Peter Pietzuch\
 arXiv
 ## [Recommendations for Baselines and Benchmarking Approximate Gaussian Processes](https://arxiv.org/abs/2402.09849)
 Sebastian W. Ober\*, Artem Artemev\*, **Marcel Wagenländer**\*, Rudolfs Grobins, Mark van der Wilk\
