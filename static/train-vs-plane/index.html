@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train vs Plane: Door-to-Door Travel Time</title>
+    <meta name="description" content="Compare door-to-door travel time by train and plane, and find the distance at which flying becomes faster.">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        :root {
+            --train: #16a34a;
+            --plane: #2563eb;
+            --text: #333333;
+            --heading: #111111;
+            --muted: #666666;
+            --border: #dddddd;
+            --bg: #f5f5f5;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            color: var(--heading);
+            font-size: 2rem;
+            line-height: 1.2;
+            text-align: center;
+            margin-bottom: .5rem;
+        }
+
+        h2 {
+            color: var(--heading);
+            font-size: 1.05rem;
+            margin-bottom: 1rem;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .subtitle {
+            max-width: 760px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        .inputs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.25rem;
+            max-width: 1000px;
+            margin: 0 auto 1.25rem;
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.25rem 1.4rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+        }
+
+        .trip-panel {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            row-gap: 1rem;
+        }
+
+        .trip-routes {
+            flex: 0 0 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem;
+            padding-top: .85rem;
+            border-top: 1px solid #eee;
+        }
+
+        .trip-routes-label {
+            margin-right: .15rem;
+            color: var(--muted);
+            font-size: .8rem;
+        }
+
+        .route-preset {
+            padding: .3rem .6rem;
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            background: #fafafa;
+            color: var(--text);
+            font-size: .8rem;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        .route-preset:hover {
+            border-color: #ccc;
+            background: #f0f0f0;
+        }
+
+        .route-preset.active {
+            border-color: #e8883a;
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        .route-km {
+            margin-left: .15rem;
+            color: var(--muted);
+        }
+
+        .route-preset.active .route-km {
+            color: #c2410c;
+        }
+
+        .trip-copy h2 {
+            margin-bottom: .2rem;
+        }
+
+        .trip-copy .hint {
+            margin-top: 0;
+            max-width: 650px;
+        }
+
+        .trip-field {
+            flex: 0 0 230px;
+        }
+
+        .trip-field input {
+            margin-bottom: 0;
+        }
+
+        .train-panel,
+        .plane-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .train-panel h2 { color: var(--train); }
+        .plane-panel h2 { color: var(--plane); }
+
+        .train-panel .derived,
+        .plane-panel .derived {
+            margin-top: auto;
+        }
+
+        .panel-hint {
+            margin-top: .2rem;
+        }
+
+        .derived {
+            margin-top: .75rem;
+            padding: .5rem .6rem;
+            border-radius: 4px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: .85rem;
+        }
+
+        .plane-panel .derived {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .derived strong {
+            color: inherit;
+            font-size: .95rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: .25rem;
+            color: #444;
+            font-size: .88rem;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            margin-bottom: .8rem;
+            padding: .45rem .6rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+        }
+
+        input[type="number"]:focus {
+            outline: 2px solid rgba(232, 136, 58, .3);
+            border-color: #e8883a;
+        }
+
+        .hint {
+            margin-top: -.35rem;
+            margin-bottom: .25rem;
+            color: var(--muted);
+            font-size: .78rem;
+        }
+
+        .actions {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        button {
+            padding: .45rem .9rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #f0f0f0;
+        }
+
+        .result-wrapper {
+            max-width: 1000px;
+            margin: 0 auto 1.25rem;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+            text-align: center;
+        }
+
+        .verdict {
+            margin-bottom: .5rem;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .verdict.train-win { color: var(--train); }
+        .verdict.plane-win { color: var(--plane); }
+        .verdict.tie { color: var(--muted); }
+
+        .totals {
+            margin-bottom: .75rem;
+            font-size: 1.05rem;
+        }
+
+        .totals strong { color: var(--heading); }
+
+        .break-even-line {
+            padding-top: .75rem;
+            border-top: 1px solid #eee;
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            max-width: 1000px;
+            height: 480px;
+            margin: 0 auto 1.25rem;
+            padding: 1.5rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+        }
+
+        .notes {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+            color: #555;
+            font-size: .9rem;
+        }
+
+        .notes h2 {
+            margin: 1.25rem 0 .5rem;
+            color: #888;
+            font-size: .82rem;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .notes h2:first-child { margin-top: 0; }
+
+        .notes ul {
+            margin-bottom: .5rem;
+            padding-left: 1.25rem;
+        }
+
+        .notes li { margin-bottom: .4rem; }
+
+        .formula {
+            margin: .5rem 0 1rem;
+            padding: .9rem 1rem;
+            overflow-x: auto;
+            border-radius: 6px;
+            background: #f5f5f5;
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: .82rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        .notes p { margin-bottom: .75rem; }
+        .notes p:last-child { margin-bottom: 0; }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem .75rem; }
+            h1 { font-size: 1.5rem; }
+            .inputs { grid-template-columns: 1fr; }
+            .trip-panel { flex-direction: column; align-items: stretch; gap: .75rem; }
+            .trip-field { flex-basis: auto; width: 100%; }
+            .trip-routes { flex-basis: auto; width: 100%; }
+            .panel { padding: 1rem; }
+            .result-wrapper { padding: 1.25rem; }
+            .verdict { font-size: 1.4rem; }
+            .chart-wrapper { height: 360px; padding: 1rem; }
+            .notes { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <header class="page-header">
+            <h1>Train vs Plane</h1>
+            <p class="subtitle">
+                Door-to-door travel time, one way. Edit the trip distance and the time you spend getting to,
+                waiting at, and leaving the station or airport to see where the two lines cross.
+            </p>
+        </header>
+
+        <section class="inputs" aria-label="Travel time inputs">
+            <div class="panel trip-panel">
+                <div class="trip-copy">
+                    <h2>Trip</h2>
+                    <p class="hint">City-to-city distance, one way. Fixed speeds: train 250 km/h, plane 830 km/h.</p>
+                </div>
+                <div class="trip-field">
+                    <label for="distance">Distance (km)</label>
+                    <input id="distance" type="number" value="600" min="0" step="10" inputmode="numeric">
+                </div>
+
+                <div class="trip-routes" aria-label="Common route distances">
+                    <span class="trip-routes-label">Common routes (straight-line):</span>
+                    <button type="button" class="route-preset" data-distance="344">London&ndash;Paris <span class="route-km">344 km</span></button>
+                    <button type="button" class="route-preset" data-distance="729">London&ndash;Stuttgart <span class="route-km">729 km</span></button>
+                    <button type="button" class="route-preset" data-distance="919">London&ndash;Munich <span class="route-km">919 km</span></button>
+                    <button type="button" class="route-preset" data-distance="841">Munich&ndash;Copenhagen <span class="route-km">841 km</span></button>
+                    <button type="button" class="route-preset" data-distance="1433">London&ndash;Stockholm <span class="route-km">1,433 km</span></button>
+                </div>
+            </div>
+
+            <div class="panel train-panel">
+                <h2>Train</h2>
+                <label for="trainTo">To station (min)</label>
+                <input id="trainTo" type="number" value="30" min="0" step="5" inputmode="numeric">
+
+                <label for="trainBuffer">Buffer before departure (min)</label>
+                <input id="trainBuffer" type="number" value="15" min="0" step="5" inputmode="numeric">
+                <p class="hint">Platform wait.</p>
+
+                <label for="trainFrom">From station (min)</label>
+                <input id="trainFrom" type="number" value="30" min="0" step="5" inputmode="numeric">
+
+                <p class="hint panel-hint">Direct train assumed; add transfer time to the buffer.</p>
+                <div class="derived">Fixed time: <strong id="trainFixedDisplay">1 h 15 min</strong></div>
+            </div>
+
+            <div class="panel plane-panel">
+                <h2>Plane</h2>
+                <label for="planeTo">To airport (min)</label>
+                <input id="planeTo" type="number" value="60" min="0" step="5" inputmode="numeric">
+
+                <label for="planeBuffer">Buffer before departure (min)</label>
+                <input id="planeBuffer" type="number" value="60" min="0" step="5" inputmode="numeric">
+                <p class="hint">Check-in, security, boarding.</p>
+
+                <label for="planeOverhead">Flight overhead (min)</label>
+                <input id="planeOverhead" type="number" value="20" min="0" step="5" inputmode="numeric">
+                <p class="hint">Taxi, takeoff, climb, and descent.</p>
+
+                <label for="planeFrom">From airport, incl. deplaning &amp; baggage (min)</label>
+                <input id="planeFrom" type="number" value="90" min="0" step="5" inputmode="numeric">
+
+                <p class="hint panel-hint">Direct flight assumed; no connections.</p>
+                <div class="derived">Fixed time: <strong id="planeFixedDisplay">3 h 50 min</strong></div>
+            </div>
+        </section>
+
+        <div class="actions">
+            <button type="button" id="reset">Reset to defaults</button>
+        </div>
+
+        <section class="result-wrapper" aria-live="polite" aria-atomic="true">
+            <div class="verdict" id="verdict">Train vs plane</div>
+            <div class="totals" id="totals">Edit the inputs to compare door-to-door travel time.</div>
+            <div class="break-even-line" id="breakEvenText"></div>
+            <noscript><div class="break-even-line">This calculator needs JavaScript to calculate the comparison and draw the chart.</div></noscript>
+        </section>
+
+        <section class="chart-wrapper" aria-label="Travel time chart">
+            <canvas id="chart" role="img" aria-label="Door-to-door travel time by train and plane as a function of distance"></canvas>
+        </section>
+
+        <section class="notes">
+            <h2>Assumptions</h2>
+            <ul>
+                <li><strong>Train speed: 250 km/h.</strong> This is the ICE's top speed, not its average. Real average speeds are lower, especially on routes with stops.</li>
+                <li><strong>Plane speed: 830 km/h.</strong> Typical cruise speed of an Airbus A320neo (Mach 0.78). Max cruise is about 870 km/h; the separate flight-overhead field covers taxi, takeoff, climb, and descent.</li>
+                <li><strong>Door-to-door, one way.</strong> Access at both ends and buffers are included. Direct trips only; no transfers or flight connections.</li>
+                <li><strong>Distance is city-to-city.</strong> Actual rail and air routes may be longer.</li>
+                <li><strong>Not modeled:</strong> ticket cost, CO<sub>2</sub> emissions, schedule frequency, time of day, and time zones.</li>
+            </ul>
+
+            <h2>How it works</h2>
+            <p>Each mode has a fixed time overhead and a distance-dependent travel time:</p>
+            <div class="formula">F_train = to station + buffer + from station
+F_plane = to airport + buffer + flight overhead + from airport
+
+T_train = F_train + 60 × d / 250
+T_plane = F_plane + 60 × d / 830
+
+break-even d* = (F_plane − F_train) / (60/250 − 60/830)</div>
+            <p>All values are in minutes and kilometres. The break-even is the distance where the two lines cross: below it the train is faster, above it the plane is faster.</p>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var TRAIN_SPEED = 250;
+            var PLANE_SPEED = 830;
+            var DEFAULTS = {
+                distance: 600,
+                trainTo: 30,
+                trainBuffer: 15,
+                trainFrom: 30,
+                planeTo: 60,
+                planeBuffer: 60,
+                planeOverhead: 20,
+                planeFrom: 90
+            };
+
+            var state = {
+                distance: DEFAULTS.distance,
+                trainTime: 0,
+                planeTime: 0,
+                breakEven: 0,
+                maxDistance: 2000
+            };
+
+            var numberFormat = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+
+            function formatNumber(value) {
+                return numberFormat.format(value);
+            }
+
+            function formatDistance(km) {
+                return formatNumber(Math.round(km)) + ' km';
+            }
+
+            function formatDuration(minutes) {
+                var total = Math.max(0, Math.round(minutes));
+                var h = Math.floor(total / 60);
+                var m = total % 60;
+                if (h === 0) return m + ' min';
+                if (m === 0) return h + ' h';
+                return h + ' h ' + String(m).padStart(2, '0') + ' min';
+            }
+
+            function formatAxisHours(hours) {
+                var total = Math.round(hours * 60);
+                var h = Math.floor(total / 60);
+                var m = total % 60;
+                if (m === 0) return h + ' h';
+                return h + ':' + String(m).padStart(2, '0');
+            }
+
+            function readNumber(id) {
+                var value = parseFloat(document.getElementById(id).value);
+                return Number.isFinite(value) && value > 0 ? value : 0;
+            }
+
+            function readInputs() {
+                return {
+                    distance: readNumber('distance'),
+                    trainTo: readNumber('trainTo'),
+                    trainBuffer: readNumber('trainBuffer'),
+                    trainFrom: readNumber('trainFrom'),
+                    planeTo: readNumber('planeTo'),
+                    planeBuffer: readNumber('planeBuffer'),
+                    planeOverhead: readNumber('planeOverhead'),
+                    planeFrom: readNumber('planeFrom')
+                };
+            }
+
+            var travelAnnotations = {
+                id: 'travelAnnotations',
+                beforeDatasetsDraw: function (chart) {
+                    var ctx = chart.ctx;
+                    var area = chart.chartArea;
+                    if (!area) return;
+
+                    ctx.save();
+                    if (state.breakEven > 0 && Number.isFinite(state.breakEven)) {
+                        var x = Math.min(area.right, Math.max(area.left, chart.scales.x.getPixelForValue(state.breakEven)));
+                        ctx.fillStyle = 'rgba(22, 163, 74, 0.06)';
+                        ctx.fillRect(area.left, area.top, x - area.left, area.bottom - area.top);
+                        ctx.fillStyle = 'rgba(37, 99, 235, 0.06)';
+                        ctx.fillRect(x, area.top, area.right - x, area.bottom - area.top);
+                    } else {
+                        ctx.fillStyle = 'rgba(37, 99, 235, 0.06)';
+                        ctx.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+                    }
+                    ctx.restore();
+                },
+                afterDatasetsDraw: function (chart) {
+                    var ctx = chart.ctx;
+                    var area = chart.chartArea;
+                    if (!area) return;
+
+                    ctx.save();
+
+                    if (state.distance > 0 && state.distance <= state.maxDistance) {
+                        var markerX = Math.min(area.right, Math.max(area.left, chart.scales.x.getPixelForValue(state.distance)));
+                        var trainY = chart.scales.y.getPixelForValue(state.trainTime / 60);
+                        var planeY = chart.scales.y.getPixelForValue(state.planeTime / 60);
+
+                        ctx.beginPath();
+                        ctx.setLineDash([4, 4]);
+                        ctx.strokeStyle = 'rgba(17, 17, 17, 0.35)';
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(markerX, area.top);
+                        ctx.lineTo(markerX, area.bottom);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        [[trainY, '#16a34a'], [planeY, '#2563eb']].forEach(function (point) {
+                            var y = point[0];
+                            if (y < area.top || y > area.bottom) return;
+                            ctx.beginPath();
+                            ctx.arc(markerX, y, 4.5, 0, Math.PI * 2);
+                            ctx.fillStyle = point[1];
+                            ctx.fill();
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        });
+
+                        ctx.font = '12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                        ctx.fillStyle = '#333333';
+                        ctx.textBaseline = 'bottom';
+                        var markerAlignRight = markerX > area.right - 110;
+                        ctx.textAlign = markerAlignRight ? 'right' : 'left';
+                        ctx.fillText(formatDistance(state.distance), markerX + (markerAlignRight ? -7 : 7), area.bottom - 6);
+                    }
+
+                    if (state.breakEven > 0 && Number.isFinite(state.breakEven) && state.breakEven <= state.maxDistance) {
+                        var breakEvenX = Math.min(area.right, Math.max(area.left, chart.scales.x.getPixelForValue(state.breakEven)));
+
+                        ctx.beginPath();
+                        ctx.setLineDash([6, 4]);
+                        ctx.strokeStyle = '#111111';
+                        ctx.lineWidth = 1.5;
+                        ctx.moveTo(breakEvenX, area.top);
+                        ctx.lineTo(breakEvenX, area.bottom);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        ctx.font = '600 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                        ctx.fillStyle = '#111111';
+                        ctx.textBaseline = 'top';
+                        var breakEvenAlignRight = breakEvenX > area.right - 150;
+                        ctx.textAlign = breakEvenAlignRight ? 'right' : 'left';
+                        ctx.fillText('Break-even \u2248 ' + formatDistance(state.breakEven), breakEvenX + (breakEvenAlignRight ? -8 : 8), area.top + 8);
+
+                        ctx.font = '12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                        if (breakEvenX - area.left > 100) {
+                            ctx.fillStyle = '#16a34a';
+                            ctx.textAlign = 'left';
+                            ctx.fillText('Train faster', area.left + 8, area.top + 30);
+                        }
+                        if (area.right - breakEvenX > 100) {
+                            ctx.fillStyle = '#2563eb';
+                            ctx.textAlign = 'right';
+                            ctx.fillText('Plane faster', area.right - 8, area.top + 30);
+                        }
+                    } else {
+                        ctx.font = '12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                        ctx.fillStyle = '#2563eb';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'top';
+                        ctx.fillText('Plane faster at every positive distance', area.left + 8, area.top + 8);
+                    }
+
+                    ctx.restore();
+                }
+            };
+
+            var chartCanvas = document.getElementById('chart');
+            var chart = null;
+
+            if (typeof Chart === 'undefined') {
+                chartCanvas.outerHTML = '<p>The chart library could not be loaded. The calculation above still works.</p>';
+                chartCanvas = null;
+            } else {
+                Chart.defaults.font.family = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+                Chart.defaults.color = '#333333';
+                Chart.register(travelAnnotations);
+
+                chart = new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Train',
+                            data: [],
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHitRadius: 10,
+                            tension: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Plane',
+                            data: [],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHitRadius: 10,
+                            tension: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: 0,
+                            max: 2000,
+                            title: { display: true, text: 'Distance (km)' },
+                            ticks: {
+                                maxTicksLimit: 8,
+                                callback: function (value) { return formatNumber(value); }
+                            },
+                            grid: { color: 'rgba(0, 0, 0, 0.06)' }
+                        },
+                        y: {
+                            min: 0,
+                            max: 10,
+                            title: { display: true, text: 'Door-to-door time (hours)' },
+                            ticks: {
+                                maxTicksLimit: 7,
+                                callback: function (value) { return formatAxisHours(value); }
+                            },
+                            grid: { color: 'rgba(0, 0, 0, 0.06)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                padding: 18
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) { return formatDistance(items[0].parsed.x); },
+                                label: function (item) { return item.dataset.label + ': ' + formatDuration(item.parsed.y * 60); },
+                                footer: function (items) {
+                                    var train = items.find(function (item) { return item.dataset.label === 'Train'; });
+                                    var plane = items.find(function (item) { return item.dataset.label === 'Plane'; });
+                                    if (!train || !plane) return '';
+                                    var diff = Math.abs(train.parsed.y - plane.parsed.y) * 60;
+                                    if (diff < 0.5) return 'Essentially tied';
+                                    var winner = train.parsed.y < plane.parsed.y ? 'Train' : 'Plane';
+                                    return winner + ' faster by ' + formatDuration(diff);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            }
+
+            function buildSeries(maxDistance, fixedMinutes, speed) {
+                var points = [];
+                var steps = 120;
+                for (var i = 0; i <= steps; i++) {
+                    var distance = maxDistance * i / steps;
+                    points.push({
+                        x: distance,
+                        y: (fixedMinutes + 60 * distance / speed) / 60
+                    });
+                }
+                return points;
+            }
+
+            function update() {
+                var inputs = readInputs();
+                var trainFixed = inputs.trainTo + inputs.trainBuffer + inputs.trainFrom;
+                var planeFixed = inputs.planeTo + inputs.planeBuffer + inputs.planeOverhead + inputs.planeFrom;
+                var trainTime = trainFixed + 60 * inputs.distance / TRAIN_SPEED;
+                var planeTime = planeFixed + 60 * inputs.distance / PLANE_SPEED;
+                var perKmDifference = 60 / TRAIN_SPEED - 60 / PLANE_SPEED;
+                var fixedDifference = planeFixed - trainFixed;
+                var breakEven = fixedDifference > 0 ? fixedDifference / perKmDifference : 0;
+                var maxDistance = Math.max(
+                    2000,
+                    Math.ceil(inputs.distance * 1.5 / 100) * 100,
+                    breakEven > 0 && Number.isFinite(breakEven) ? Math.ceil(breakEven * 1.5 / 100) * 100 : 0
+                );
+                var maxHours = Math.max(
+                    trainFixed + 60 * maxDistance / TRAIN_SPEED,
+                    planeFixed + 60 * maxDistance / PLANE_SPEED
+                ) / 60;
+                var yMax = Math.max(1, Math.ceil(maxHours * 1.1));
+
+                state.distance = inputs.distance;
+                state.trainTime = trainTime;
+                state.planeTime = planeTime;
+                state.breakEven = breakEven;
+                state.maxDistance = maxDistance;
+
+                if (chart) {
+                    chart.data.datasets[0].data = buildSeries(maxDistance, trainFixed, TRAIN_SPEED);
+                    chart.data.datasets[1].data = buildSeries(maxDistance, planeFixed, PLANE_SPEED);
+                    chart.options.scales.x.max = maxDistance;
+                    chart.options.scales.y.max = yMax;
+                    chart.update();
+                }
+
+                var verdict = document.getElementById('verdict');
+                var totals = document.getElementById('totals');
+                var breakEvenText = document.getElementById('breakEvenText');
+                var diff = trainTime - planeTime;
+
+                if (Math.abs(diff) < 0.5) {
+                    verdict.className = 'verdict tie';
+                    verdict.textContent = 'Essentially tied';
+                } else if (diff < 0) {
+                    verdict.className = 'verdict train-win';
+                    verdict.textContent = 'Train is faster by ' + formatDuration(Math.abs(diff));
+                } else {
+                    verdict.className = 'verdict plane-win';
+                    verdict.textContent = 'Plane is faster by ' + formatDuration(Math.abs(diff));
+                }
+
+                totals.innerHTML = 'At <strong>' + formatDistance(inputs.distance) + '</strong>: train <strong>' +
+                    formatDuration(trainTime) + '</strong> &middot; plane <strong>' + formatDuration(planeTime) + '</strong>.';
+
+                document.getElementById('trainFixedDisplay').textContent = formatDuration(trainFixed);
+                document.getElementById('planeFixedDisplay').textContent = formatDuration(planeFixed);
+
+                Array.prototype.forEach.call(document.querySelectorAll('.route-preset'), function (button) {
+                    var presetDistance = parseFloat(button.getAttribute('data-distance'));
+                    button.classList.toggle('active', Math.abs(presetDistance - inputs.distance) < 0.5);
+                });
+
+                if (breakEven > 0 && Number.isFinite(breakEven)) {
+                    breakEvenText.textContent = 'Break-even at \u2248 ' + formatDistance(breakEven) +
+                        '. Train is faster below that distance; plane is faster above it.';
+                } else {
+                    breakEvenText.textContent = 'With these inputs, the plane is faster at every positive distance.';
+                }
+
+                if (chartCanvas) {
+                    chartCanvas.setAttribute('aria-label',
+                        'Door-to-door travel time by train and plane over 0 to ' + formatDistance(maxDistance) +
+                        '. At ' + formatDistance(inputs.distance) + ', train takes ' + formatDuration(trainTime) +
+                        ' and plane takes ' + formatDuration(planeTime) + '.');
+                }
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll('input[type="number"]'), function (input) {
+                input.addEventListener('input', update);
+                input.addEventListener('change', function () {
+                    var value = parseFloat(input.value);
+                    if (!Number.isFinite(value) || value < 0) input.value = 0;
+                    update();
+                });
+            });
+
+            Array.prototype.forEach.call(document.querySelectorAll('.route-preset'), function (button) {
+                button.addEventListener('click', function () {
+                    document.getElementById('distance').value = button.getAttribute('data-distance');
+                    update();
+                });
+            });
+
+            document.getElementById('reset').addEventListener('click', function () {
+                Object.keys(DEFAULTS).forEach(function (id) {
+                    document.getElementById(id).value = DEFAULTS[id];
+                });
+                update();
+            });
+
+            update();
+        })();
+    </script>
+</body>
+</html>
