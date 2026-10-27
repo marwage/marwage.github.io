@@ -51,10 +51,10 @@
         var MARATHON_KM = 42.195;
         var MIN_PACE_S = 170;
         var MAX_PACE_S = 345;
-        var marathonData = [
-            { x: MIN_PACE_S, y: MIN_PACE_S * MARATHON_KM },
-            { x: MAX_PACE_S, y: MAX_PACE_S * MARATHON_KM },
-        ];
+        var marathonData = [];
+        for (var p = MIN_PACE_S; p <= MAX_PACE_S; p++) {
+            marathonData.push({ x: p, y: p * MARATHON_KM });
+        }
 
         function formatPace(totalSeconds) {
             var m = Math.floor(totalSeconds / 60);
