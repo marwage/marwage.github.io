@@ -1,0 +1,12 @@
+/* Styling used only when a demo page is shown inside a blog-post iframe. */
+html.embed body {
+    padding: 1rem;
+    background: #fff;
+}
+
+html.embed h1,
+html.embed .page-header,
+html.embed .subtitle,
+html.embed .lang-toggle {
+    display: none;
+}

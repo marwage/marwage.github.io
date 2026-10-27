@@ -1,0 +1,43 @@
+{{- $src := .Get "src" -}}
+{{- $title := .Get "title" | default "Interactive figure" -}}
+{{- $caption := .Get "caption" -}}
+{{- $height := .Get "height" | default "600" -}}
+{{- $embedURL := printf "%s?embed=1" ($src | relURL) -}}
+<figure class="demo-embed" id="demo-{{ .Ordinal }}">
+  <iframe src="{{ $embedURL }}"
+          title="{{ $title }}"
+          loading="lazy"
+          style="height: {{ $height }}px"></iframe>
+
+  {{ with $caption }}<figcaption>{{ . | markdownify }}</figcaption>{{ end }}
+
+  <p class="demo-open">
+    <a href="{{ $src | relURL }}" target="_blank" rel="noopener">Open full screen ↗</a>
+  </p>
+</figure>
+
+<script>
+  (() => {
+    const frame = document.querySelector("#demo-{{ .Ordinal }} iframe");
+
+    const fit = () => {
+      try {
+        const doc = frame.contentDocument;
+        if (!doc || !doc.body) return;
+        const style = doc.defaultView.getComputedStyle(doc.body);
+        const margins = (parseFloat(style.marginTop) || 0) +
+                        (parseFloat(style.marginBottom) || 0);
+        const height = doc.body.getBoundingClientRect().height + margins;
+        frame.style.height = Math.ceil(height) + "px";
+      } catch (_) {}
+    };
+
+    frame.addEventListener("load", () => {
+      fit();
+      if (window.ResizeObserver && frame.contentDocument) {
+        new ResizeObserver(fit).observe(frame.contentDocument.body);
+      }
+    });
+    window.addEventListener("resize", fit);
+  })();
+</script>

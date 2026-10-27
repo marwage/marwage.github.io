@@ -6,4 +6,4 @@ description: "A door-to-door travel time calculator comparing trains and planes,
 
 A train at 250 km/h and an Airbus A320neo at 830 km/h: the plane is obviously faster in the air, but door-to-door travel includes getting to the station or airport, waiting, and getting to your destination. This calculator compares the total time and shows the distance at which the plane overtakes the train.
 
-[Try it here](/train-vs-plane/)
+{{< demo src="/train-vs-plane/" title="Train vs plane travel time calculator" caption="Door-to-door travel time and the break-even distance where flying wins." >}}

@@ -313,6 +313,30 @@ hr {
   font-size: 0.95rem;
 }
 
+/* Embedded interactive demos */
+.demo-embed {
+  margin: 2rem 0;
+}
+
+.demo-embed iframe {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.demo-embed figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.demo-open {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
 /* Footer */
 .site-footer {
   padding: 2rem 0;
