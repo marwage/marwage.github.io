@@ -3,4 +3,4 @@ title: "Email"
 weight: 40
 ---
 
-hello ɑ marcel.systems
+hello ɑ marcelwagenlander.com
